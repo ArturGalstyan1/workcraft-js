@@ -1,14 +1,19 @@
 {
   "name": "workcraft-js",
   "description": "Node module for Workcraft Workers",
-  "version": "0.5.7",
+  "version": "0.5.10",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsup",
-    "watch": "tsup -w"
+    "watch": "tsup --watch"
   },
   "keywords": [
     "Workcraft",
@@ -17,7 +22,6 @@
   "author": "Artur A. Galstyan",
   "license": "MIT",
   "devDependencies": {
-    "@types/jest": "^29.5.13",
     "@types/node": "^22.7.5",
     "@types/uuid": "^10.0.0",
     "mysql2": "^3.11.3",
