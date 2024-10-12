@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "esModuleInterop": true,
+    "strictNullChecks": true,
+    "target": "ES2023",
+    "moduleResolution": "node",
+    "module": "commonjs",
+    "declaration": true,
+    "isolatedModules": true,
+    "outDir": "dist",
+    "types": ["jest", "node"]
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}
