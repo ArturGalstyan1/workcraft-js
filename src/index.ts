@@ -171,3 +171,41 @@ export const createTask = async (
     }
   }
 };
+
+/**
+ * Deletes a task from the bountyboard table by its ID if the task is in the PENDING state.
+ *
+ *
+ * @param id
+ * @param config
+ * @returns A Promise that resolves to true if the task was deleted, false otherwise.
+ * @throws {Error} If the database tables are not set up.
+ */
+
+export const deleteTask = async (
+  id: string,
+  config: Types.MySQLConnectionConfig,
+): Promise<boolean> => {
+  if (!assertTablesSetup(config)) {
+    throw new Error(
+      "Tables not set up. Run `python3 -m workcraft setup_database_tables` to set up tables.",
+    );
+  }
+  const connection = await mysql.createConnection(config);
+  try {
+    const [results] = await connection.query(
+      `
+      DELETE FROM bountyboard
+      WHERE id = ? AND status = 'PENDING'
+    `,
+      [id],
+    );
+
+    if (Array.isArray(results) && results.length > 0) {
+      return true;
+    }
+    return false;
+  } finally {
+    connection.end();
+  }
+};
