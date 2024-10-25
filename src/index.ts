@@ -2,6 +2,24 @@ import * as Types from "./types.js";
 import mysql, { Connection } from "mysql2/promise";
 import { v4 as uuidv4 } from "uuid";
 
+interface PartialTaskPayload {
+  task_args?: any[];
+  task_kwargs?: Record<string, any>;
+  prerun_handler_args?: any[];
+  prerun_handler_kwargs?: Record<string, any>;
+  postrun_handler_args?: any[];
+  postrun_handler_kwargs?: Record<string, any>;
+}
+
+interface CreateTaskOptions {
+  taskName: string;
+  taskPayload?: PartialTaskPayload;
+  queue?: string;
+  retryOnFailure?: boolean;
+  retryLimit?: number;
+  config: Types.MySQLConnectionConfig;
+}
+
 /**
  * Checks if the required tables are set up in the database.
  * @param config - The MySQL connection configuration.
@@ -89,42 +107,41 @@ export const getTaskById = async (
 };
 
 /**
- * Creates a new task in the bountyboard table.
+ * Creates a new task in the bountyboard table with simplified interface and default values.
  *
- * @param taskPayload - The payload for the new task.
- * @param config - MySQL connection configuration.
+ * @param options - The options for creating the task
  * @returns A Promise that resolves to the created Task object, or null if creation failed.
  * @throws {Error} If the database tables are not set up.
  * @throws {Error} If there's an error during task creation or retrieval.
  *
  * @example
- * const newTask = await createTask(
- *   {
- *     name: "simple_task",
- *     task_args: [1, 2, 3],
- *     task_kwargs: {},
- *     prerun_handler_args: [],
- *     prerun_handler_kwargs: {},
- *     postrun_handler_args: [],
- *     postrun_handler_kwargs: {},
+ * const vectorizeTask = await createTask({
+ *   taskName: 'vectorize',
+ *   taskPayload: {
+ *     task_kwargs: {
+ *       args: {
+ *         docs: docs,
+ *         file: file
+ *       }
+ *     },
+ *     postrun_handler_kwargs: {
+ *       user: user,
+ *       callback_url: `${ORIGIN}/api/file/${fileId}/callback/vectorize`,
+ *       file: file
+ *     }
  *   },
- *   {
- *     host: "127.0.0.1",
- *     port: 3306,
- *     user: "root",
- *     password: "password",
- *     database: "workcraft",
- *   }
- * );
- * console.log(newTask);
+ *   queue: VECTORIZE_QUEUE_NAME,
+ *   config: config
+ * });
  */
-export const createTask = async (
-  taskPayload: Types.TaskPayload,
-  queue: string = "DEFAULT",
-  retryOnFailure: boolean = false,
-  retryLimit: number = 0,
-  config: Types.MySQLConnectionConfig,
-): Promise<Types.Task | null> => {
+export const createTask = async ({
+  taskName,
+  taskPayload = {},
+  queue = "DEFAULT",
+  retryOnFailure = false,
+  retryLimit = 0,
+  config,
+}: CreateTaskOptions): Promise<Types.Task | null> => {
   let connection;
   try {
     // Check if tables are set up
@@ -138,15 +155,27 @@ export const createTask = async (
     const taskId = uuidv4();
     const now = new Date();
 
-    // Prepare the task object, ensuring payload is stringified
+    // Fill in default values for optional payload fields to match TaskPayload type
+    const fullTaskPayload: Types.TaskPayload = {
+      task_args: [],
+      task_kwargs: {},
+      prerun_handler_args: [],
+      prerun_handler_kwargs: {},
+      postrun_handler_args: [],
+      postrun_handler_kwargs: {},
+      ...taskPayload,
+    };
+
+    // Prepare the task object
     const task: Omit<Types.Task, "result"> = {
       id: taskId,
+      task_name: taskName,
       status: Types.TaskStatus.PENDING,
       created_at: now,
       updated_at: now,
       worker_id: null,
-      queue: queue,
-      payload: JSON.stringify(taskPayload) as unknown as Types.TaskPayload,
+      queue,
+      payload: JSON.stringify(fullTaskPayload) as unknown as Types.TaskPayload,
       retry_on_failure: retryOnFailure,
       retry_limit: retryLimit,
       retry_count: 0,

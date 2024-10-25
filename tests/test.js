@@ -16,13 +16,10 @@ async function main() {
     result = await getTaskById("c4e7ee02-7099-4cf3-95f1-fe94045e1a7e", config);
     console.log("Task by ID:", result);
 
-    result = await createTask(
-      {
-        name: "simple_task",
-        task_args: [1, 2, 3],
-      },
-      config,
-    );
+    result = await createTask({
+      taskName: "simpleTask",
+      taskPayload: { task_args: [] },
+    });
     console.log("Task created:", result);
   } catch (error) {
     console.error("Error in main function:", error);
