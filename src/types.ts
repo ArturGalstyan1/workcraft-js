@@ -1,5 +1,4 @@
 export type TaskPayload = {
-  name: string;
   task_args: any[];
   task_kwargs: Record<string, any>;
   prerun_handler_args: any[];
@@ -18,6 +17,7 @@ export enum TaskStatus {
 
 export type Task = {
   id: string;
+  task_name: string;
   status: TaskStatus;
   created_at: Date;
   updated_at: Date;
