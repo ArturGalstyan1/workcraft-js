@@ -238,3 +238,41 @@ export const deleteTask = async (
     connection.end();
   }
 };
+
+/**
+ * Updates a task in the bountyboard table by its ID.
+ *
+ * @param id - The ID of the task to update.
+ * @param updates - The updates to apply to the task.
+ * @param config - MySQL connection configuration.
+ * @returns A Promise that resolves to the updated Task object, or null if the task is not found.
+ * @throws {Error} If the database tables are not set up.
+ */
+export const updateTask = async (
+  id: string,
+  updates: Partial<Types.Task>,
+  config: Types.MySQLConnectionConfig,
+): Promise<Types.Task | null> => {
+  if (!assertTablesSetup(config)) {
+    throw new Error(
+      "Tables not set up. Run `python3 -m workcraft setup_database_tables` to set up tables.",
+    );
+  }
+  const connection = await mysql.createConnection(config);
+  try {
+    // Update the task
+    await connection.query(
+      `
+      UPDATE bountyboard
+      SET ?
+      WHERE id = ?
+    `,
+      [updates, id],
+    );
+
+    // Fetch the updated task to return
+    return await getTaskById(id, config);
+  } finally {
+    connection.end();
+  }
+};
