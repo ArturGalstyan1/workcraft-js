@@ -259,6 +259,7 @@ export const updateTask = async (
     );
   }
   const connection = await mysql.createConnection(config);
+  const stringifiedUpdates = JSON.stringify(updates);
   try {
     // Update the task
     await connection.query(
@@ -267,7 +268,7 @@ export const updateTask = async (
       SET ?
       WHERE id = ?
     `,
-      [updates, id],
+      [stringifiedUpdates, id],
     );
 
     // Fetch the updated task to return
