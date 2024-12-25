@@ -251,10 +251,8 @@ class WorkcraftClient {
 
       if (res.status !== 200) {
         console.error(`Server responded with status ${res.status}`);
-        // Don't throw, just log the error
       }
     } catch (error) {
-      // Log the error but don't throw
       if (error instanceof Error) {
         if ("name" in error && error.name === "AbortError") {
           console.error("Connection timeout - server might be offline");
