@@ -118,7 +118,7 @@ class WorkcraftClient {
     });
   };
 
-  private websocket: WebSocket | null = null;
+  private sse: EventSource | null = null;
   private subscribers: Map<string, Subscriber> = new Map();
   private reconnectDelay: number = 5000; // Start with 1 second
 
@@ -141,56 +141,37 @@ class WorkcraftClient {
     return jwt;
   }
 
-  private async setupWebSocket(): Promise<void> {
+  private async setupSSE(): Promise<void> {
     if (this.hashedApiKey === null) {
       throw new Error("Client must be initialized before subscribing");
     }
 
     // Create and set the JWT
     const jwt = await this.createJWT();
-    const wsProtocol = this.strongholdUrl.startsWith("https") ? "wss" : "ws";
-    const wsUrl = `${wsProtocol}://${this.strongholdUrl.replace(/^https?:\/\//, "")}/ws/chieftain`;
+    const url = `${this.strongholdUrl}/events?type=chieftain`;
 
-    this.websocket = new WebSocket(wsUrl, jwt);
+    this.sse = new EventSource(url, { withCredentials: true });
 
-    this.websocket.onopen = (event) => {
-      console.log("WebSocket connection established");
+    this.sse.onopen = (event) => {
+      console.log("SSE connection established");
     };
 
-    this.websocket.onmessage = (event) => {
+    this.sse.onmessage = (event) => {
       try {
         const update: Update = JSON.parse(event.data);
         this.notifySubscribers(update);
       } catch (error) {
-        console.error("Failed to parse WebSocket message:", error);
+        console.error("Failed to parse SSE message:", error);
       }
     };
 
-    this.websocket.onclose = () => {
-      this.handleWebSocketClose();
-    };
-
-    this.websocket.onerror = (error: any) => {
+    this.sse.onerror = (error: any) => {
       if (error.message) {
-        console.error("WebSocket error:", error.message);
+        console.error("SSE error:", error.message);
       } else {
-        console.error("WebSocket error:", error);
+        console.error("SSE error:", error);
       }
     };
-  }
-
-  private handleWebSocketClose(): void {
-    setTimeout(() => {
-      this.setupWebSocket().catch((error) => {
-        console.error(
-          "Failed to reconnect:",
-          error,
-          "Retrying in",
-          this.reconnectDelay,
-          "ms",
-        );
-      });
-    }, this.reconnectDelay);
   }
 
   private notifySubscribers(update: Update): void {
@@ -203,9 +184,9 @@ class WorkcraftClient {
     });
   }
 
-  async subscribe(callback: Subscriber): Promise<Unsubscribe> {
-    if (!this.websocket) {
-      await this.setupWebSocket();
+  async subscribeEXPERIMENTAL(callback: Subscriber): Promise<Unsubscribe> {
+    if (!this.sse) {
+      await this.setupSSE();
     }
 
     const id = uuidv4();
@@ -214,19 +195,17 @@ class WorkcraftClient {
     return () => {
       this.subscribers.delete(id);
 
-      // If this was the last subscriber, close the WebSocket
-      if (this.subscribers.size === 0 && this.websocket) {
-        this.websocket.close();
-        this.websocket = null;
+      if (this.subscribers.size === 0 && this.sse) {
+        this.sse.close();
+        this.sse = null;
       }
     };
   }
 
-  // Add a method to manually close the connection
   async disconnect(): Promise<void> {
-    if (this.websocket) {
-      this.websocket.close();
-      this.websocket = null;
+    if (this.sse) {
+      this.sse.close();
+      this.sse = null;
       this.subscribers.clear();
     }
   }

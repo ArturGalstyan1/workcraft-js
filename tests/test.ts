@@ -6,11 +6,11 @@ let config: WorkcraftConfig = {
   port: 6112,
   apiKey: "abcd",
 };
+
 async function main() {
   try {
     const workcraftClient = new WorkcraftClient(config);
     await workcraftClient.init();
-
     workcraftClient.subscribe((msg) => {
       console.log("Received message:", msg);
     });
@@ -20,7 +20,6 @@ async function main() {
         task_args: ["aaaaa"],
       },
     });
-
     console.log("Task created:", task);
   } catch (error) {
     console.error("Error in main function:", error);
@@ -28,4 +27,5 @@ async function main() {
     console.log("Done");
   }
 }
-main();
+
+main().catch(console.error);
