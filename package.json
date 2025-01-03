@@ -28,13 +28,10 @@
     "mysql2": "^3.11.3",
     "ts-node": "^10.9.2",
     "tsup": "^8.3.0",
-    "typescript": "^5.7.2"
-  },
-  "peerDependencies": {
-    "mysql2": "^3.11.3"
+    "typescript": "^5.7.2",
+    "express": "^4.21.2"
   },
   "dependencies": {
-    "express": "^4.21.2",
     "jose": "^5.9.6",
     "uuid": "^10.0.0"
   }
