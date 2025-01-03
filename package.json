@@ -1,7 +1,7 @@
 {
   "name": "workcraft-js",
   "description": "Node module for Workcraft Workers",
-  "version": "0.5.20",
+  "version": "0.6.0",
   "type": "module",
   "exports": {
     ".": {
@@ -34,6 +34,7 @@
     "mysql2": "^3.11.3"
   },
   "dependencies": {
+    "express": "^4.21.2",
     "jose": "^5.9.6",
     "uuid": "^10.0.0"
   }
