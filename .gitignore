@@ -3,3 +3,4 @@
 
 .env
 .DS_Store
+/tests/node_modules
