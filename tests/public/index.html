@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Workcraft Client</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.3.2/uuid.min.js"></script>
+        <script
+            src="/node_modules/jose/dist/browser/index.js"
+            type="module"
+        ></script>
+        <script type="module">
+            import { SignJWT } from "/node_modules/jose/dist/browser/index.js";
+            import { WorkcraftClient } from "/index.js";
+
+            const config = {
+                host: "http://localhost",
+                port: 6112,
+                apiKey: "abcd",
+            };
+
+            const TokenExpiration = 24 * 60 * 60;
+
+            async function createJWT(apiKey) {
+                const now = Math.floor(Date.now() / 1000);
+                const secret = new TextEncoder().encode(apiKey);
+
+                const jwt = await new SignJWT({ api_key: apiKey })
+                    .setProtectedHeader({ alg: "HS256" })
+                    .setIssuedAt(now)
+                    .setExpirationTime(now + TokenExpiration)
+                    .setNotBefore(now)
+                    .sign(secret);
+
+                return jwt;
+            }
+
+            async function main() {
+                try {
+                    const jwt = await createJWT(config.apiKey);
+                    console.log("JWT created:", jwt);
+
+                    document.cookie = `workcraft_auth=${jwt}; Path=/`;
+                    console.log("All cookies:", document.cookie);
+
+                    const client = new WorkcraftClient(config);
+                    await client.init();
+
+                    client.subscribe((msg) => {
+                        console.log("Message received:", msg);
+                    });
+                } catch (error) {
+                    console.error("Error in main:", error);
+                }
+            }
+
+            document.addEventListener("DOMContentLoaded", () => {
+                main().catch(console.error);
+            });
+        </script>
+    </head>
+    <body>
+        <h1>Workcraft Client</h1>
+        <p>Check the console for messages</p>
+    </body>
+</html>

@@ -1,7 +1,7 @@
 {
   "name": "workcraft-js",
   "description": "Node module for Workcraft Workers",
-  "version": "0.5.20",
+  "version": "1.0.0",
   "type": "module",
   "exports": {
     ".": {
@@ -22,16 +22,17 @@
   "author": "Artur A. Galstyan",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^22.7.5",
+    "@happy-dom/global-registrator": "^16.3.0",
+    "@types/node": "^22.10.2",
     "@types/uuid": "^10.0.0",
     "mysql2": "^3.11.3",
+    "ts-node": "^10.9.2",
     "tsup": "^8.3.0",
-    "typescript": "^5.6.3"
-  },
-  "peerDependencies": {
-    "mysql2": "^3.11.3"
+    "typescript": "^5.7.2",
+    "express": "^4.21.2"
   },
   "dependencies": {
+    "jose": "^5.9.6",
     "uuid": "^10.0.0"
   }
 }

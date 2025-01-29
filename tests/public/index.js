@@ -1,23 +1,6 @@
-import { v4 as uuidv4 } from "uuid";
-import { SignJWT } from "jose";
-type Subscriber = (message: Update) => void;
-type Unsubscribe = () => void;
-
-const TokenExpiration = 24 * 60 * 60; // 24 hours in seconds
-
-interface PartialTaskPayload {
-  task_args?: any[];
-  task_kwargs?: Record<string, any>;
-  prerun_handler_args?: any[];
-  prerun_handler_kwargs?: Record<string, any>;
-  postrun_handler_args?: any[];
-  postrun_handler_kwargs?: Record<string, any>;
-}
-
-// Create a function to ensure defaults
-const createDefaultTaskPayload = (
-  partial: PartialTaskPayload = {},
-): TaskPayload => ({
+// src/index.ts
+var TokenExpiration = 24 * 60 * 60;
+var createDefaultTaskPayload = (partial = {}) => ({
   task_args: partial.task_args ?? [],
   task_kwargs: partial.task_kwargs ?? {},
   prerun_handler_args: partial.prerun_handler_args ?? [],
@@ -25,87 +8,32 @@ const createDefaultTaskPayload = (
   postrun_handler_args: partial.postrun_handler_args ?? [],
   postrun_handler_kwargs: partial.postrun_handler_kwargs ?? {},
 });
-
-interface CreateTaskOptions {
-  taskName: string;
-  taskPayload?: PartialTaskPayload;
-  queue?: string;
-  retryOnFailure?: boolean;
-  retryLimit?: number;
-}
-
-type TaskPayload = {
-  task_args: any[];
-  task_kwargs: Record<string, any>;
-  prerun_handler_args: any[];
-  prerun_handler_kwargs: Record<string, any>;
-  postrun_handler_args: any[];
-  postrun_handler_kwargs: Record<string, any>;
-};
-
-enum TaskStatus {
-  PENDING = "PENDING",
-  RUNNING = "RUNNING",
-  SUCCESS = "SUCCESS",
-  FAILURE = "FAILURE",
-  INVALID = "INVALID",
-  CANCELLED = "CANCELLED",
-}
-
-enum PeonStatus {
-  IDLE = "IDLE",
-  PREPARING = "PREPARING",
-  WORKING = "WORKING",
-  OFFLINE = "OFFLINE",
-}
-
-type Task = {
-  id: string;
-  task_name: string;
-  status: TaskStatus;
-  created_at: Date;
-  updated_at: Date;
-  worker_id: string | null;
-  queue: string;
-  payload: TaskPayload;
-  result: any | null;
-  retry_on_failure: boolean;
-  retry_count: number;
-  retry_limit: number;
-};
-
-type Peon = {
-  id: string;
-  status: PeonStatus;
-  last_heartbeat: Date;
-  current_task: string | null;
-  queues: string;
-};
-
-enum UpdateType {
-  TASK_UPDATE = "task_update",
-  PEON_UPDATE = "peon_update",
-}
-
-type Update = {
-  type: UpdateType;
-  message: {
-    task?: Task;
-    peon?: Peon;
-  };
-};
-
-type WorkcraftConfig = {
-  host: string;
-  port: number;
-  apiKey: string;
-};
-
-class WorkcraftClient {
-  private config: WorkcraftConfig;
-  private strongholdUrl: string;
-  private hashedApiKey: string | null = null;
-  private fetchWithApiKey: typeof fetch = async (input, init) => {
+var TaskStatus = /* @__PURE__ */ ((TaskStatus2) => {
+  TaskStatus2["PENDING"] = "PENDING";
+  TaskStatus2["RUNNING"] = "RUNNING";
+  TaskStatus2["SUCCESS"] = "SUCCESS";
+  TaskStatus2["FAILURE"] = "FAILURE";
+  TaskStatus2["INVALID"] = "INVALID";
+  TaskStatus2["CANCELLED"] = "CANCELLED";
+  return TaskStatus2;
+})(TaskStatus || {});
+var PeonStatus = /* @__PURE__ */ ((PeonStatus2) => {
+  PeonStatus2["IDLE"] = "IDLE";
+  PeonStatus2["PREPARING"] = "PREPARING";
+  PeonStatus2["WORKING"] = "WORKING";
+  PeonStatus2["OFFLINE"] = "OFFLINE";
+  return PeonStatus2;
+})(PeonStatus || {});
+var UpdateType = /* @__PURE__ */ ((UpdateType2) => {
+  UpdateType2["TASK_UPDATE"] = "task_update";
+  UpdateType2["PEON_UPDATE"] = "peon_update";
+  return UpdateType2;
+})(UpdateType || {});
+var WorkcraftClient = class {
+  config;
+  strongholdUrl;
+  hashedApiKey = null;
+  fetchWithApiKey = async (input, init) => {
     if (this.hashedApiKey === null)
       throw new Error("API key is not hashed yet.");
     return fetch(input, {
@@ -116,31 +44,26 @@ class WorkcraftClient {
       },
     });
   };
-
-  private sse: EventSource | null = null;
-  private subscribers: Map<string, Subscriber> = new Map();
-  private reconnectDelay: number = 5000; // Start with 1 second
-
-  constructor(config: WorkcraftConfig) {
+  sse = null;
+  subscribers = /* @__PURE__ */ new Map();
+  reconnectDelay = 5e3;
+  // Start with 1 second
+  constructor(config) {
     this.config = config;
     this.strongholdUrl = config.host + ":" + config.port;
   }
-
-  private async createJWT(): Promise<string> {
-    const now = Math.floor(Date.now() / 1000);
+  async createJWT() {
+    const now = Math.floor(Date.now() / 1e3);
     const secret = new TextEncoder().encode(this.config.apiKey);
-
     const jwt = await new SignJWT({ api_key: this.config.apiKey })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt(now)
       .setExpirationTime(now + TokenExpiration)
       .setNotBefore(now)
       .sign(secret);
-
     return jwt;
   }
-
-  private async setupSSE(): Promise<void> {
+  async setupSSE() {
     if (this.hashedApiKey === null) {
       throw new Error("Client must be initialized before subscribing");
     }
@@ -151,26 +74,22 @@ class WorkcraftClient {
       console.error("Failed to create EventSource:", error);
       return;
     }
-
     this.sse.onopen = (event) => {
       console.log("SSE connection established");
     };
-
     this.sse.onmessage = (event) => {
       try {
-        const update: Update = JSON.parse(event.data);
+        const update = JSON.parse(event.data);
         this.notifySubscribers(update);
       } catch (error) {
         console.error("Failed to parse SSE message:", error);
       }
     };
-
-    this.sse.onerror = (error: any) => {
+    this.sse.onerror = (error) => {
       console.error("SSE error:", error);
     };
   }
-
-  private notifySubscribers(update: Update): void {
+  notifySubscribers(update) {
     this.subscribers.forEach((subscriber) => {
       try {
         subscriber(update);
@@ -179,34 +98,38 @@ class WorkcraftClient {
       }
     });
   }
-
-  async subscribe(callback: Subscriber): Promise<Unsubscribe> {
+  async subscribe(callback) {
     if (!this.sse) {
       await this.setupSSE();
     }
-
+    function uuidv4() {
+      return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+        /[xy]/g,
+        function (c) {
+          var r = (Math.random() * 16) | 0,
+            v = c == "x" ? r : (r & 0x3) | 0x8;
+          return v.toString(16);
+        },
+      );
+    }
     const id = uuidv4();
     this.subscribers.set(id, callback);
-
     return () => {
       this.subscribers.delete(id);
-
       if (this.subscribers.size === 0 && this.sse) {
         this.sse.close();
         this.sse = null;
       }
     };
   }
-
-  async disconnect(): Promise<void> {
+  async disconnect() {
     if (this.sse) {
       this.sse.close();
       this.sse = null;
       this.subscribers.clear();
     }
   }
-
-  async init(): Promise<void> {
+  async init() {
     const encoder = new TextEncoder();
     const data = encoder.encode(this.config.apiKey);
     const buffer = await crypto.subtle.digest("SHA-256", data);
@@ -217,15 +140,15 @@ class WorkcraftClient {
     try {
       console.log("fetching", this.strongholdUrl + "/api/test");
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
+      const timeout = setTimeout(() => controller.abort(), 5e3);
       const res = await this.fetchWithApiKey(this.strongholdUrl + "/api/test", {
         signal: controller.signal,
       });
       clearTimeout(timeout);
-
       if (res.status !== 200) {
         console.error(`Server responded with status ${res.status}`);
+      } else {
+        console.log("Stronghold server is online");
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -242,14 +165,13 @@ class WorkcraftClient {
       }
     }
   }
-
   async createTaskOrThrow({
     taskName,
     taskPayload = {},
     queue = "DEFAULT",
     retryOnFailure = false,
     retryLimit = 0,
-  }: CreateTaskOptions): Promise<Task | null> {
+  }) {
     const res = await this.fetchWithApiKey(this.strongholdUrl + "/api/task", {
       method: "POST",
       headers: {
@@ -269,8 +191,7 @@ class WorkcraftClient {
     }
     return res.json();
   }
-
-  async getTaskByIdOrThrow(id: string): Promise<Task> {
+  async getTaskByIdOrThrow(id) {
     const res = await this.fetchWithApiKey(
       this.strongholdUrl + "/api/task/" + id,
     );
@@ -279,8 +200,7 @@ class WorkcraftClient {
     }
     return res.json();
   }
-
-  async getPeonByIdOrThrow(id: string): Promise<Peon> {
+  async getPeonByIdOrThrow(id) {
     const res = await this.fetchWithApiKey(
       this.strongholdUrl + "/api/peon/" + id,
     );
@@ -289,8 +209,7 @@ class WorkcraftClient {
     }
     return res.json();
   }
-
-  async cancelTaskOrThrow(id: string) {
+  async cancelTaskOrThrow(id) {
     const res = await this.fetchWithApiKey(
       this.strongholdUrl + "/api/task/" + id + "/cancel",
       {
@@ -301,19 +220,6 @@ class WorkcraftClient {
       throw new Error("Failed to cancel task: " + (await res.text()));
     }
   }
-}
-
-export {
-  TaskStatus,
-  PeonStatus,
-  UpdateType,
-  WorkcraftClient,
-  // Add type exports
-  type WorkcraftConfig,
-  type PartialTaskPayload,
-  type CreateTaskOptions,
-  type TaskPayload,
-  type Task,
-  type Peon,
-  type Update,
 };
+export { PeonStatus, TaskStatus, UpdateType, WorkcraftClient };
+//# sourceMappingURL=index.js.map
