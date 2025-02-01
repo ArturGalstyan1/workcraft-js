@@ -96,8 +96,7 @@ type Update = {
 };
 
 type WorkcraftConfig = {
-  host: string;
-  port: number;
+  strongholdUrl: string;
   apiKey: string;
 };
 
@@ -123,7 +122,7 @@ class WorkcraftClient {
 
   constructor(config: WorkcraftConfig) {
     this.config = config;
-    this.strongholdUrl = config.host + ":" + config.port;
+    this.strongholdUrl = config.strongholdUrl;
   }
 
   private async createJWT(): Promise<string> {
