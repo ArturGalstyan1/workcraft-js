@@ -103,15 +103,14 @@ type WorkcraftConfig = {
 class WorkcraftClient {
   private config: WorkcraftConfig;
   private strongholdUrl: string;
-  private hashedApiKey: string | null = null;
+  private apiKey: string | null = null;
   private fetchWithApiKey: typeof fetch = async (input, init) => {
-    if (this.hashedApiKey === null)
-      throw new Error("API key is not hashed yet.");
+    if (this.apiKey === null) throw new Error("No API key provided");
     return fetch(input, {
       ...init,
       headers: {
         ...init?.headers,
-        WORKCRAFT_API_KEY: this.hashedApiKey,
+        WORKCRAFT_API_KEY: this.apiKey,
       },
     });
   };
@@ -140,7 +139,7 @@ class WorkcraftClient {
   }
 
   private async setupSSE(): Promise<void> {
-    if (this.hashedApiKey === null) {
+    if (this.apiKey === null) {
       throw new Error("Client must be initialized before subscribing");
     }
     const url = `${this.strongholdUrl}/events?type=chieftain`;
@@ -206,13 +205,7 @@ class WorkcraftClient {
   }
 
   async init(): Promise<void> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(this.config.apiKey);
-    const buffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = Array.from(new Uint8Array(buffer));
-    this.hashedApiKey = hashArray
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+    this.apiKey = this.config.apiKey;
     try {
       console.log("fetching", this.strongholdUrl + "/api/test");
       const controller = new AbortController();

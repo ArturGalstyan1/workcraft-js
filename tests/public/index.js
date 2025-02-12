@@ -64,7 +64,7 @@ var WorkcraftClient = class {
     return jwt;
   }
   async setupSSE() {
-    if (this.hashedApiKey === null) {
+    if (this.apiKey === null) {
       throw new Error("Client must be initialized before subscribing");
     }
     const url = `${this.strongholdUrl}/events?type=chieftain`;
@@ -130,13 +130,7 @@ var WorkcraftClient = class {
     }
   }
   async init() {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(this.config.apiKey);
-    const buffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = Array.from(new Uint8Array(buffer));
-    this.hashedApiKey = hashArray
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+    this.apiKey = this.config.apiKey;
     try {
       console.log("fetching", this.strongholdUrl + "/api/test");
       const controller = new AbortController();
