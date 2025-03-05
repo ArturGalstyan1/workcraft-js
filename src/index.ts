@@ -235,6 +235,23 @@ class WorkcraftClient {
     }
   }
 
+  async deleteTaskOrThrow(taskId: string): Promise<any> {
+    const res = await this.fetchWithApiKey(
+      this.strongholdUrl + "/api/task/" + taskId + "/delete",
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+    if (res.status >= 200 && res.status <= 299) {
+      throw new Error("Failed to delete the task: " + (await res.text()));
+    }
+
+    return res.json();
+  }
+
   async createTaskOrThrow({
     taskName,
     taskPayload = {},
