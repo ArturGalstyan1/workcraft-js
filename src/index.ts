@@ -245,7 +245,7 @@ class WorkcraftClient {
         },
       },
     );
-    if (res.status >= 200 && res.status <= 299) {
+    if (res.status < 200 || res.status > 299) {
       throw new Error("Failed to delete the task: " + (await res.text()));
     }
 
